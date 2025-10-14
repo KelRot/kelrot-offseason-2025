@@ -5,14 +5,12 @@ import frc.robot.Constants.LedConstants;
 import frc.robot.subsystems.leds.LedSubsystem;
 
 public class RobotStatusManager {
-    boolean changed = true;
-
     public enum RobotStatus {
         Alignment(255,0,0, true, false), // Blinking Red
         CountDown_Intake(0, 255, 0, true, false), // Blinking Green
         Has_Coral(0,255,255, false, false), // Solid Cyan
         ShootingL1(255, 0, 255, true, false),     // Blinking Purple
-        ShootingL2(71, 106, 48, true, false),       // Blinking Pink
+        ShootingL2(247, 180, 198, true, false),       // Blinking Pink
         ShootingL3(255, 0, 0, true, false),       // Blinking Red
         Removing_Algae(0, 255, 0, true, false),    // Blinking Green // Blinking Green
         Climbing(0, 0, 0, false, true),          // Rainbow
@@ -31,10 +29,11 @@ public class RobotStatusManager {
     }
     
     private RobotStatus currentStatus;
-    private final LedSubsystem m_led = new LedSubsystem(LedConstants.kledGroups);
+    private final LedSubsystem m_led;
 
-    public RobotStatusManager() {
+    public RobotStatusManager(LedSubsystem ledSubsystem) {
        this.currentStatus = RobotStatus.Default;
+       this.m_led = ledSubsystem;
     }
 
     public void setStatus(RobotStatus newStatus) {

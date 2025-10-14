@@ -65,7 +65,7 @@ public final class Constants
 //  }
 
   public static class LedConstants {
-    public static final int kLedPort = 6; //PWM port on RoborIO
+    public static final int kLedPort = 7; //PWM port on RoborIO
     public static final int kLedLength = 60; //led count
     public static final double kLedBlinkInterval = 500; //milliseconds
     public static final Distance kLedSpacing = Meters.of(1/ 60.0); // density of 60 LEDs per meter
