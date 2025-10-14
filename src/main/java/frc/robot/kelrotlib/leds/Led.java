@@ -1,6 +1,7 @@
 package frc.robot.kelrotlib.leds;
 
 import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.Milliseconds;
 import static edu.wpi.first.units.Units.Seconds;
 
 import edu.wpi.first.wpilibj.AddressableLED;
@@ -50,9 +51,9 @@ public class Led extends SubsystemBase{ //a Java inheritance example
         runPattern().schedule();
     }
 
-    public void setBlinkColor(Color color, double interval, int[] groupIDs){
+    public void setBlinkColor(Color color, int[] groupIDs){
         LEDPattern base = LEDPattern.solid(color);
-        LEDPattern blinkPattern = base.blink(Seconds.of(interval)); //synchronised blink, wpilib also has support for asynchronised blink
+        LEDPattern blinkPattern = base.blink(Milliseconds.of(LedConstants.kLedBlinkInterval)); //synchronised blink, wpilib also has support for asynchronised blink
         for (int i = 0; i < groupIDs.length; i++) {
             m_patternList[groupIDs[i]] =  blinkPattern;
         }
