@@ -45,7 +45,7 @@ public class ArmSubsystem extends SubsystemBase {
 
   public void reachSetPoint(double setPoint) {
     // Implement PID control logic here to reach the desired setPoint
-    if (SmartDashboard.getBoolean("isRioPIDController", true)) {
+    if (SmartDashboard.getBoolean("dev/isRioPIDController", true)) {
       double pidOutput = pidController.calculate(getCurrentAngle(), setPoint);
       double ffOutput = calculateFF(getCurrentAngle());
       masterMotor.setVoltage(pidOutput + ffOutput);
@@ -84,7 +84,7 @@ public class ArmSubsystem extends SubsystemBase {
     if (this.isStopped) {
       masterMotor.setVoltage(0);
     } else {
-      if (SmartDashboard.getBoolean("debugMode", false)) {
+      if (SmartDashboard.getBoolean("dev/debugMode", false)) {
         setVoltage();
       } else {
         reachSetPoint(getSetpoint());

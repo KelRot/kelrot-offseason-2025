@@ -17,7 +17,6 @@ import frc.robot.Constants;
 public class wristSubsystem extends SubsystemBase {
   private TalonFX masterMotor;
   private WPI_VictorSPX m_wheelMotor;
-  private double currentAngleSetpoint;
   private final DigitalInput m_sensor;
   private TunableNumber kP = new TunableNumber("Wrist/kP", 0.03);
   private TunableNumber kI = new TunableNumber("Wrist/kI", 0.0);
@@ -61,7 +60,7 @@ public class wristSubsystem extends SubsystemBase {
 
   public void reachSetPoint(double setPoint) {
     // Implement PID control logic here to reach the desired setPoint
-    if (SmartDashboard.getBoolean("isRioPIDController", true)) {
+    if (SmartDashboard.getBoolean("dev/isRioPIDController", true)) {
       double pidOutput = pidController.calculate(getRealAngle(), setPoint);
       double ffOutput = getFeedForward(setPoint);
       masterMotor.setVoltage(pidOutput + ffOutput);
@@ -85,7 +84,7 @@ public class wristSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
-    if (SmartDashboard.getBoolean("debugMode", false)) {
+    if (SmartDashboard.getBoolean("dev/debugMode", false)) {
       setVoltage();
     } else {
       reachSetPoint(setPoint);
