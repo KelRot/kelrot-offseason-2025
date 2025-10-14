@@ -6,7 +6,9 @@ package frc.robot;
 
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.measure.Distance;
 import swervelib.math.Matter;
+import static edu.wpi.first.units.Units.Meters;
 
 /**
  * The Constants class provides a convenient place for teams to hold robot-wide numerical or boolean constants. This
@@ -61,6 +63,18 @@ public final class Constants
 //    public static final PIDConstants TRANSLATION_PID = new PIDConstants(0.7, 0, 0);
 //    public static final PIDConstants ANGLE_PID       = new PIDConstants(0.4, 0, 0.01);
 //  }
+
+  public static class LedConstants {
+    public static final int kLedPort = 6; //PWM port on RoborIO
+    public static final int kLedLength = 60; //led count
+    public static final Distance kLedSpacing = Meters.of(1/ 60.0); // density of 60 LEDs per meter
+    public static final int[][] kledGroups = {
+      new int[] {0,19}, //group 0
+      new int[] {20,39}, // group 1
+      new int[] {40,59} // group 2
+    };
+
+  }
 
   public static final class DrivebaseConstants
   {
