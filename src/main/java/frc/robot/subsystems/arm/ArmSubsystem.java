@@ -47,7 +47,7 @@ public class ArmSubsystem extends SubsystemBase {
     // Implement PID control logic here to reach the desired setPoint
     if (SmartDashboard.getBoolean("isRioPIDController", true)) {
       double pidOutput = pidController.calculate(getCurrentAngle(), setPoint);
-      double ffOutput = calculateFF(getCurrentAngle);
+      double ffOutput = calculateFF(getCurrentAngle());
       masterMotor.setVoltage(pidOutput + ffOutput);
     } else {
       this.closedLoopController.setReference(setPoint, ControlType.kPosition, ClosedLoopSlot.kSlot0,
