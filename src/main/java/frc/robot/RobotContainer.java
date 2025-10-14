@@ -103,7 +103,7 @@ public class RobotContainer {
    * The container for the robot. Contains subsystems, OI devices, and commands.
    */
   public RobotContainer() {
-    m_led.rainbow(new int []{0,1,2});
+    m_led.rainbow(new int []{0});
     // Configure the trigger bindings
     configureBindings();
     DriverStation.silenceJoystickConnectionWarning(true);

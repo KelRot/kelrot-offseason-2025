@@ -69,10 +69,6 @@ public class Led extends SubsystemBase{ //a Java inheritance example
         runPattern().schedule();
     }
 
-    public void turnOff(){
-        setSolidColor(Color.kBlack, new int[] {0, 1, 2}); //turn off all LEDs by setting them to black
-    }
-
     public Command runPattern(){  //A command is used as it doesn't allow actions to run simultaneously, for this usage it is crucial, because we need to stop the previous patterns and start the new ones.
         return run(() -> {
             for (int i = 0; i < m_groupList.length; i++) {
