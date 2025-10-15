@@ -12,16 +12,19 @@ import com.revrobotics.spark.config.SparkMaxConfig;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
+import frc.robot.Constants.ArmConstants;
 import frc.robot.kelrotlib.utils.TunableNumber;
 
 public class ArmSubsystem extends SubsystemBase {
   public TunableNumber kP = new TunableNumber("Arm/kP", 0.034);
   public TunableNumber kI = new TunableNumber("Arm/kI", 0.0);
   public TunableNumber kD = new TunableNumber("Arm/kD", 0.00000098);
+  public TunableNumber debugSetpoint = new TunableNumber("Arm/debugSetpoint", ArmConstants.defaultAngle);
   public SparkMax masterMotor, slaveMotor;
-  public double setPoint = 0.0;
+  public double setPoint = ArmConstants.defaultAngle;
   public SparkMaxConfig masterConfig, slaveConfig;
   private final SparkClosedLoopController closedLoopController;
   private final Encoder quadEncoder;
@@ -33,6 +36,8 @@ public class ArmSubsystem extends SubsystemBase {
     this.quadEncoder = new Encoder(0, 1); // Replace 0, 1 with actual ports
     this.masterMotor = new SparkMax(Constants.ArmConstants.MASTER_MOTOR_ID, SparkMax.MotorType.kBrushless);
     this.slaveMotor = new SparkMax(Constants.ArmConstants.SLAVE_MOTOR_ID, SparkMax.MotorType.kBrushless);
+    this.masterConfig = new SparkMaxConfig();
+    this.slaveConfig = new SparkMaxConfig();
     this.closedLoopController = masterMotor.getClosedLoopController();
     configureMotors();
     configureEncoder();
@@ -44,6 +49,7 @@ public class ArmSubsystem extends SubsystemBase {
   }
 
   public void reachSetPoint(double setPoint) {
+    if(!SmartDashboard.getBoolean("dev/debugMode", false) && !isStopped) {
     // Implement PID control logic here to reach the desired setPoint
     if (SmartDashboard.getBoolean("dev/isRioPIDController", true)) {
       double pidOutput = pidController.calculate(getCurrentAngle(), setPoint);
@@ -53,7 +59,7 @@ public class ArmSubsystem extends SubsystemBase {
       this.closedLoopController.setReference(setPoint, ControlType.kPosition, ClosedLoopSlot.kSlot0,
           calculateFF(getCurrentAngle()));
     }
-
+  }
   }
 
   public double getCurrentAngle() {
@@ -86,9 +92,8 @@ public class ArmSubsystem extends SubsystemBase {
     } else {
       if (SmartDashboard.getBoolean("dev/debugMode", false)) {
         setVoltage();
-      } else {
-        reachSetPoint(getSetpoint());
       }
+    }
       if (masterMotor.getEncoder().getVelocity() < 0.5 && masterMotor.getEncoder().getVelocity() > -0.5) {
         masterMotor.getEncoder().setPosition(getCurrentAngle() * (Constants.ArmConstants.GEARING / 360.0));
       }
@@ -98,17 +103,23 @@ public class ArmSubsystem extends SubsystemBase {
       SmartDashboard.putNumber("Arm/CurrentAngle", getCurrentAngle());
       SmartDashboard.putNumber("Arm/SetPoint", getSetpoint());
       SmartDashboard.putNumber("Arm/MotorVelocity", masterMotor.getEncoder().getVelocity());
+      SmartDashboard.putNumber("Arm/MotorPosition", masterMotor.getEncoder().getPosition());
       SmartDashboard.putNumber("Arm/MotorOutput", masterMotor.getAppliedOutput());
       SmartDashboard.putNumber("Arm/MotorCurrent", masterMotor.getOutputCurrent());
       // This method will be called once per scheduler run
     }
-  }
 
   @Override
   public void simulationPeriodic() {
     // This method will be called once per scheduler run during simulation
   }
 
+  public Command reachSetPointCommand() {
+    return run(() -> reachSetPoint(getSetpoint()));
+  }
+  public Command TreachSetPointCommand() {
+    return run(() -> reachSetPoint(getSetpoint()));
+  }
   public void configureMotors() {
     masterConfig.idleMode(IdleMode.kBrake).voltageCompensation(12.0).smartCurrentLimit(45).encoder
         .positionConversionFactor(Constants.ArmConstants.ENCODER_DISTANCE_PER_PULSE * Constants.ArmConstants.GEARING);

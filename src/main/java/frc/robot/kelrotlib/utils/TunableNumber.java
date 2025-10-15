@@ -25,7 +25,7 @@ public class TunableNumber {
         // Get or create the NetworkTable entry for this tunable number
         entry = NetworkTableInstance.getDefault()
                 .getTable("SmartDashboard")
-                .getEntry("/Tuning" + "/" + key);
+                .getEntry(key);
 
         // Set the initial value on the dashboard
         entry.setDouble(defaultValue);
@@ -39,7 +39,7 @@ public class TunableNumber {
 
                     // If the value changed and tuningMode is ON, accept the change
                     if(this.lastValue != newValue && Constants.tuningMode) {
-                        DogLog.log("/Tuning" + "/" + key, entry.getDouble(lastValue));
+                        DogLog.log(key, entry.getDouble(lastValue));
                         System.out.println(newValue);
                         this.lastValue = newValue;
                         onChange.accept(lastValue); // call the callback
@@ -61,7 +61,7 @@ public class TunableNumber {
         // Get or create the NetworkTable entry for this tunable number
         entry = NetworkTableInstance.getDefault()
                 .getTable("SmartDashboard")
-                .getEntry("/Tuning" + "/" + key);
+                .getEntry(key);
 
         // Set the initial value on the dashboard
         entry.setDouble(defaultValue);
@@ -75,7 +75,7 @@ public class TunableNumber {
 
                     // If the value changed and tuningMode is ON, accept the change
                     if(this.lastValue != newValue && Constants.tuningMode) {
-                        DogLog.log("/Tuning" + "/" + key, entry.getDouble(lastValue));
+                        DogLog.log(key, entry.getDouble(lastValue));
                         System.out.println(newValue);
                         this.lastValue = newValue;
                     } else { 

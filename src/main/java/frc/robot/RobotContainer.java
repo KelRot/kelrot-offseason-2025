@@ -23,8 +23,11 @@ import frc.robot.Constants.LedConstants;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.subsystems.RobotStatusManager;
 import frc.robot.subsystems.RobotStatusManager.RobotStatus;
+import frc.robot.subsystems.arm.ArmSubsystem;
 import frc.robot.subsystems.leds.LedSubsystem;
 import frc.robot.subsystems.swervedrive.SwerveSubsystem;
+import frc.robot.subsystems.wrist.wristSubsystem;
+
 import java.io.File;
 import swervelib.SwerveInputStream;
 
@@ -43,9 +46,11 @@ public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   private final SwerveSubsystem drivebase = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(),
       "swerve"));
-  private final LedSubsystem m_led = new LedSubsystem(LedConstants.kledGroups);
-  private final RobotStatusManager m_robotStatusManager = new RobotStatusManager(m_led);
-
+  // private final LedSubsystem m_led = new LedSubsystem(LedConstants.kledGroups);
+  // private final RobotStatusManager m_robotStatusManager = new
+  // RobotStatusManager(m_led);
+  private final ArmSubsystem m_arm = new ArmSubsystem();
+  private final wristSubsystem m_wrist = new wristSubsystem();
 
   /**
    * Converts driver input into a field-relative ChassisSpeeds that is controlled
@@ -93,11 +98,14 @@ public class RobotContainer {
       .translationHeadingOffset(Rotation2d.fromDegrees(
           0));
 
+  Command driveFieldOrientedAnglularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
+  Command driveFieldOrientedAnglularVelocityKeyboard = drivebase.driveFieldOriented(driveAngularVelocityKeyboard);
+
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
    */
   public RobotContainer() {
-    m_robotStatusManager.setStatus(RobotStatus.ShootingL2);
+    // m_robotStatusManager.setStatus(RobotStatus.ShootingL2);
     // Configure the trigger bindings
     configureBindings();
     DriverStation.silenceJoystickConnectionWarning(true);
@@ -120,8 +128,6 @@ public class RobotContainer {
    * Flight joysticks}.
    */
   private void configureBindings() {
-    Command driveFieldOrientedAnglularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
-    Command driveFieldOrientedAnglularVelocityKeyboard = drivebase.driveFieldOriented(driveAngularVelocityKeyboard);
 
     if (RobotBase.isSimulation()) {
       drivebase.setDefaultCommand(driveFieldOrientedAnglularVelocityKeyboard);
@@ -129,32 +135,11 @@ public class RobotContainer {
       drivebase.setDefaultCommand(driveFieldOrientedAnglularVelocity);
     }
 
-    if (Robot.isSimulation()) {
-      Pose2d target = new Pose2d(new Translation2d(1, 4),
-          Rotation2d.fromDegrees(90));
-      // drivebase.getSwerveDrive().field.getObject("targetPose").setPose(target);
-      driveDirectAngleKeyboard.driveToPose(() -> target,
-          new ProfiledPIDController(5,
-              0,
-              0,
-              new Constraints(5, 2)),
-          new ProfiledPIDController(5,
-              0,
-              0,
-              new Constraints(Units.degreesToRadians(360),
-                  Units.degreesToRadians(180))));
-      driverXbox.start().onTrue(Commands.runOnce(() -> drivebase.resetOdometry(new Pose2d(3, 3, new Rotation2d()))));
-      driverXbox.button(1).whileTrue(drivebase.sysIdDriveMotorCommand());
-      driverXbox.button(2).whileTrue(Commands.runEnd(() -> driveDirectAngleKeyboard.driveToPoseEnabled(true),
-          () -> driveDirectAngleKeyboard.driveToPoseEnabled(false)));
-
-      // driverXbox.b().whileTrue(
-      // drivebase.driveToPose(
-      // new Pose2d(new Translation2d(4, 4), Rotation2d.fromDegrees(0)))
-      // );
-
-    }
     if (DriverStation.isTest()) {
+
+      m_arm.setDefaultCommand(m_arm.TreachSetPointCommand());
+      m_wrist.setDefaultCommand(m_wrist.TreachSetPointCommand());
+
       drivebase.setDefaultCommand(driveFieldOrientedAnglularVelocity); // Overrides drive command above!
 
       driverXbox.x().whileTrue(Commands.runOnce(drivebase::lock, drivebase).repeatedly());
@@ -164,6 +149,10 @@ public class RobotContainer {
       driverXbox.leftBumper().onTrue(Commands.none());
       driverXbox.rightBumper().onTrue(Commands.none());
     } else {
+      m_arm.setDefaultCommand(m_arm.reachSetPointCommand());
+      m_wrist.setDefaultCommand(m_wrist.reachSetPointCommand());
+
+
       driverXbox.a().onTrue((Commands.runOnce(drivebase::zeroGyro)));
       driverXbox.x().onTrue(Commands.runOnce(drivebase::addFakeVisionReading));
       driverXbox.start().whileTrue(Commands.none());

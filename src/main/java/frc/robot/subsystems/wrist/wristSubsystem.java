@@ -9,8 +9,8 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Constants.WristConstants;
 import frc.robot.kelrotlib.utils.TunableNumber;
 import frc.robot.Constants;
 
@@ -21,6 +21,7 @@ public class wristSubsystem extends SubsystemBase {
   private TunableNumber kP = new TunableNumber("Wrist/kP", 0.03);
   private TunableNumber kI = new TunableNumber("Wrist/kI", 0.0);
   private TunableNumber kD = new TunableNumber("Wrist/kD", 0.00000098);
+  private TunableNumber debugSetpoint = new TunableNumber("Wrist/debugSetPoint", 0);
   private PIDController pidController;
   private double setPoint;
 
@@ -59,13 +60,15 @@ public class wristSubsystem extends SubsystemBase {
   }
 
   public void reachSetPoint(double setPoint) {
-    // Implement PID control logic here to reach the desired setPoint
-    if (SmartDashboard.getBoolean("dev/isRioPIDController", true)) {
-      double pidOutput = pidController.calculate(getRealAngle(), setPoint);
-      double ffOutput = getFeedForward(setPoint);
-      masterMotor.setVoltage(pidOutput + ffOutput);
-    } else {
-      // will add talon fx closed loop later
+    if (SmartDashboard.getBoolean("dev/debugMode", false)) {
+      // Implement PID control logic here to reach the desired setPoint
+      if (SmartDashboard.getBoolean("dev/isRioPIDController", true)) {
+        double pidOutput = pidController.calculate(getRealAngle(), setPoint);
+        double ffOutput = getFeedForward(setPoint);
+        masterMotor.setVoltage(pidOutput + ffOutput);
+      } else {
+        // will add talon fx closed loop later
+      }
     }
   }
 
@@ -82,12 +85,17 @@ public class wristSubsystem extends SubsystemBase {
     return direction * (1.02 * Math.abs(Math.sin(Math.toRadians(Math.abs(angleInDegrees)))));
   }
 
+  public Command reachSetPointCommand() {
+    return run(() -> reachSetPoint(getSetpoint()));
+  }
+  public Command TreachSetPointCommand() {
+    return run(() -> reachSetPoint(debugSetpoint.lastValue));
+  }
+
   @Override
   public void periodic() {
     if (SmartDashboard.getBoolean("dev/debugMode", false)) {
       setVoltage();
-    } else {
-      reachSetPoint(setPoint);
     }
     pidController.setP(kP.lastValue);
     pidController.setI(kI.lastValue);

@@ -28,9 +28,9 @@ public final class Constants
   // Maximum speed of the robot in meters per second, used to limit acceleration.
 
   public static final class ArmConstants { 
-    public static final int MASTER_MOTOR_ID = 10;
-    public static final int SLAVE_MOTOR_ID = 11;
-    public static final double GEARING = 35.45142857142857; // 100:1
+    public static final int MASTER_MOTOR_ID = 5;
+    public static final int SLAVE_MOTOR_ID = 4;
+    public static final double GEARING = 35.45142857142857; 
     public static final double MAX_ANGLE = 90.0; // degrees
     public static final double MIN_ANGLE = 0.0; // degrees
     public static final double MAX_VELOCITY = 30.0; // degrees per second
@@ -40,12 +40,12 @@ public final class Constants
   }
 
   public static final class ClimbConstants {
-    public static final int openerNeoID = 20;
-    public static final int closerNeoID = 21;
+    public static final int openerNeoID = 2;
+    public static final int closerNeoID = 3;
   }
 
   public static final class WristConstants { 
-    public static final int FalconID = 30;
+    public static final int FalconID = 0;
     public static final int wheelMotorID = 5;
     public static final double rioKP = 0.03;
     public static final double rioKI = 0.0;
