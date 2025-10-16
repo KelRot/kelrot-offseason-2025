@@ -52,11 +52,12 @@ public class wristSubsystem extends SubsystemBase {
   }
 
   public double getAngle() {
-    return Rotations.of(masterMotor.getPosition().getValueAsDouble()).in(Degrees) / 8.125 + 15;
+    return Rotations.of(masterMotor.getPosition().getValueAsDouble()).in(Degrees) / 36 + 15;
   }
 
   public double getRealAngle() {
-    return -(getAngle() + -13) - getAngle() - 93;
+    return (-(getAngle() + -13) - getAngle() - 93) * 36 / 8.125;
+    // -2getAngle - 80
   }
 
   public void reachSetPoint(double setPoint) {
@@ -82,12 +83,13 @@ public class wristSubsystem extends SubsystemBase {
 
   public double getFeedForward(double angleInDegrees) { // Calculates The Feed Forward Value
     double direction = angleInDegrees < 0 ? -1 : 1;
-    return direction * (1.02 * Math.abs(Math.sin(Math.toRadians(Math.abs(angleInDegrees)))));
+    return direction * (1.02 * 8.125 / 36 * Math.abs(Math.sin(Math.toRadians(Math.abs(angleInDegrees)))));
   }
 
   public Command reachSetPointCommand() {
     return run(() -> reachSetPoint(getSetpoint()));
   }
+
   public Command TreachSetPointCommand() {
     return run(() -> reachSetPoint(debugSetpoint.lastValue));
   }

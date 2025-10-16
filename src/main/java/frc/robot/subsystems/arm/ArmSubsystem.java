@@ -82,7 +82,6 @@ public class ArmSubsystem extends SubsystemBase {
 
   public void setMode(boolean isStopped) {
     this.isStopped = isStopped;
-
   }
 
   @Override
@@ -118,7 +117,7 @@ public class ArmSubsystem extends SubsystemBase {
     return run(() -> reachSetPoint(getSetpoint()));
   }
   public Command TreachSetPointCommand() {
-    return run(() -> reachSetPoint(getSetpoint()));
+    return run(() -> reachSetPoint(debugSetpoint.lastValue));
   }
   public void configureMotors() {
     masterConfig.idleMode(IdleMode.kBrake).voltageCompensation(12.0).smartCurrentLimit(45).encoder

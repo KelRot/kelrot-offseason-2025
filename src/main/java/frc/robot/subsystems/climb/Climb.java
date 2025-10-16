@@ -12,7 +12,7 @@ import frc.robot.Constants;
 
 
 public class Climb extends SubsystemBase {
-  /** Creates a new ExampleSubsystem. */
+  
   private final SparkMax opener_motor, closer_motor; 
   private final SparkMaxConfig motorConfig;
 
