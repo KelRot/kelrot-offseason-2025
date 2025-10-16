@@ -12,28 +12,34 @@ import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.OperatorConstants;
+import frc.robot.commands.climb;
+import frc.robot.commands.climbModeSetup;
+import frc.robot.commands.climbOpen;
 import frc.robot.subsystems.arm.ArmSubsystem;
+import frc.robot.subsystems.climb.Climb;
 import frc.robot.subsystems.swervedrive.SwerveSubsystem;
 import frc.robot.subsystems.wrist.wristSubsystem;
 
 import java.io.File;
 import swervelib.SwerveInputStream;
 
-
 public class RobotContainer {
 
-  
   final CommandXboxController driverXbox = new CommandXboxController(0);
-  
+
   private final SwerveSubsystem drivebase = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(),
       "swerve"));
   private final ArmSubsystem m_arm = new ArmSubsystem();
+  private final Climb m_climb = new Climb();
   private final wristSubsystem m_wrist = new wristSubsystem();
+  private final Command climbCommand = new climb(m_climb);
+  private final Command clibModeCommand = new climbModeSetup(m_arm);
+  private final Command climbOpenCommand = new climbOpen(m_climb);
 
-  
   SwerveInputStream driveAngularVelocity = SwerveInputStream.of(drivebase.getSwerveDrive(),
       () -> driverXbox.getLeftY() * -1,
       () -> driverXbox.getLeftX() * -1)
@@ -129,15 +135,18 @@ public class RobotContainer {
     } else {
       m_arm.setDefaultCommand(m_arm.reachSetPointCommand());
       m_wrist.setDefaultCommand(m_wrist.reachSetPointCommand());
-
-
-      driverXbox.a().onTrue((Commands.runOnce(drivebase::zeroGyro)));
-      driverXbox.x().onTrue(Commands.runOnce(drivebase::addFakeVisionReading));
-      driverXbox.start().whileTrue(Commands.none());
-      driverXbox.back().whileTrue(Commands.none());
-      driverXbox.leftBumper().whileTrue(Commands.runOnce(drivebase::lock, drivebase).repeatedly());
-      driverXbox.rightBumper().onTrue(Commands.none());
     }
+    
+    driverXbox.b().whileTrue(new InstantCommand(() -> m_wrist.setWheelMotor(9)))
+        .whileFalse(new InstantCommand(() -> m_wrist.setWheelMotor(0)));
+    driverXbox.x().whileTrue(new InstantCommand(() -> m_wrist.setWheelMotor(-11)))
+        .whileFalse(new InstantCommand(() -> m_wrist.setWheelMotor(0)));
+    driverXbox.start().whileTrue(new InstantCommand(() -> m_climb.setCloser(-1)))
+        .whileFalse(new InstantCommand(() -> m_climb.setCloser(0)));
+    driverXbox.back().onTrue(clibModeCommand);
+    driverXbox.y().whileTrue(climbOpenCommand);
+    driverXbox.a().whileTrue(climbCommand);
+    driverXbox.pov(0).whileTrue(drivebase.centerModulesCommand());
 
   }
 
