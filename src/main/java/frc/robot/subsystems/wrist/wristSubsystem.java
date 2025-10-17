@@ -56,12 +56,11 @@ public class wristSubsystem extends SubsystemBase {
   }
 
   public double getRealAngle() {
-    return (-(getAngle() + -13) - getAngle() - 93) * 36 / 8.125;
+    return -(getAngle() + -13) - getAngle() - 93;
     // -2getAngle - 80
   }
 
   public void reachSetPoint(double setPoint) {
-    if (SmartDashboard.getBoolean("dev/debugMode", false)) {
       // Implement PID control logic here to reach the desired setPoint
       if (SmartDashboard.getBoolean("dev/isRioPIDController", true)) {
         double pidOutput = pidController.calculate(getRealAngle(), setPoint);
@@ -70,7 +69,7 @@ public class wristSubsystem extends SubsystemBase {
       } else {
         // will add talon fx closed loop later
       }
-    }
+    
   }
 
   public void setSetpoint(double setPoint) {

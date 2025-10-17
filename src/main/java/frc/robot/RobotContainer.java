@@ -16,12 +16,14 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.OperatorConstants;
+import frc.robot.commands.IntakeCmd;
+import frc.robot.commands.ShootLevel2;
 import frc.robot.commands.climb;
 import frc.robot.commands.climbModeSetup;
 import frc.robot.commands.climbOpen;
 import frc.robot.subsystems.arm.ArmSubsystem;
 import frc.robot.subsystems.climb.Climb;
-import frc.robot.subsystems.swervedrive.SwerveSubsystem;
+import frc.robot.subsystems.swervedrive.*;
 import frc.robot.subsystems.wrist.wristSubsystem;
 
 import java.io.File;
@@ -31,7 +33,7 @@ public class RobotContainer {
 
   final CommandXboxController driverXbox = new CommandXboxController(0);
 
-  private final SwerveSubsystem drivebase = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(),
+  private final Swerve drivebase = new Swerve(new File(Filesystem.getDeployDirectory(),
       "swerve"));
   private final ArmSubsystem m_arm = new ArmSubsystem();
   private final Climb m_climb = new Climb();
@@ -39,14 +41,18 @@ public class RobotContainer {
   private final Command climbCommand = new climb(m_climb);
   private final Command clibModeCommand = new climbModeSetup(m_arm);
   private final Command climbOpenCommand = new climbOpen(m_climb);
+  private final Command shootLevel2Command = new ShootLevel2(m_arm, m_wrist);
+  private final Command IntakeCmd = new IntakeCmd(m_arm, m_wrist);
 
+  
   SwerveInputStream driveAngularVelocity = SwerveInputStream.of(drivebase.getSwerveDrive(),
-      () -> driverXbox.getLeftY() * -1,
-      () -> driverXbox.getLeftX() * -1)
-      .withControllerRotationAxis(driverXbox::getRightX)
-      .deadband(OperatorConstants.DEADBAND)
-      .scaleTranslation(0.8)
-      .allianceRelativeControl(true);
+  () -> driverXbox.getLeftY() * -1,
+  () -> driverXbox.getLeftX() * -1)
+  .withControllerRotationAxis(() -> driverXbox.getRawAxis(2) * -1)
+  .deadband(OperatorConstants.DEADBAND)
+  .scaleTranslation(0.8)
+  .scaleRotation(0.7)
+  .allianceRelativeControl(true);
 
   /**
    * Clone's the angular velocity input stream and converts it to a fieldRelative
@@ -56,8 +62,7 @@ public class RobotContainer {
   SwerveInputStream driveAngularVelocityKeyboard = SwerveInputStream.of(drivebase.getSwerveDrive(),
       () -> -driverXbox.getLeftY(),
       () -> -driverXbox.getLeftX())
-      .withControllerRotationAxis(() -> driverXbox.getRawAxis(
-          2))
+      .withControllerRotationAxis(() -> driverXbox.getRightX())
       .deadband(OperatorConstants.DEADBAND)
       .scaleTranslation(0.8)
       .allianceRelativeControl(true);
@@ -82,8 +87,10 @@ public class RobotContainer {
       .translationHeadingOffset(Rotation2d.fromDegrees(
           0));
 
-  Command driveFieldOrientedAnglularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
   Command driveFieldOrientedAnglularVelocityKeyboard = drivebase.driveFieldOriented(driveAngularVelocityKeyboard);
+  Command driveFieldOrientedAnglularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
+
+
 
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -113,39 +120,21 @@ public class RobotContainer {
    */
   private void configureBindings() {
 
-    if (RobotBase.isSimulation()) {
-      drivebase.setDefaultCommand(driveFieldOrientedAnglularVelocityKeyboard);
-    } else {
       drivebase.setDefaultCommand(driveFieldOrientedAnglularVelocity);
-    }
-
-    if (DriverStation.isTest()) {
-
-      m_arm.setDefaultCommand(m_arm.TreachSetPointCommand());
-      m_wrist.setDefaultCommand(m_wrist.TreachSetPointCommand());
-
-      drivebase.setDefaultCommand(driveFieldOrientedAnglularVelocity); // Overrides drive command above!
-
-      driverXbox.x().whileTrue(Commands.runOnce(drivebase::lock, drivebase).repeatedly());
-      driverXbox.y().whileTrue(drivebase.driveToDistanceCommand(1.0, 0.2));
-      driverXbox.start().onTrue((Commands.runOnce(drivebase::zeroGyro)));
-      driverXbox.back().whileTrue(drivebase.centerModulesCommand());
-      driverXbox.leftBumper().onTrue(Commands.none());
-      driverXbox.rightBumper().onTrue(Commands.none());
-    } else {
       m_arm.setDefaultCommand(m_arm.reachSetPointCommand());
-      m_wrist.setDefaultCommand(m_wrist.reachSetPointCommand());
-    }
+
     
-    driverXbox.b().whileTrue(new InstantCommand(() -> m_wrist.setWheelMotor(9)))
+    driverXbox.button(4).whileTrue(new InstantCommand(() -> m_wrist.setWheelMotor(9)))
         .whileFalse(new InstantCommand(() -> m_wrist.setWheelMotor(0)));
-    driverXbox.x().whileTrue(new InstantCommand(() -> m_wrist.setWheelMotor(-11)))
+    driverXbox.button(1).whileTrue(new InstantCommand(() -> m_wrist.setWheelMotor(-11)))
         .whileFalse(new InstantCommand(() -> m_wrist.setWheelMotor(0)));
-    driverXbox.start().whileTrue(new InstantCommand(() -> m_climb.setCloser(-1)))
+    driverXbox.button(10).whileTrue(new InstantCommand(() -> m_climb.setCloser(-1)))
         .whileFalse(new InstantCommand(() -> m_climb.setCloser(0)));
-    driverXbox.back().onTrue(clibModeCommand);
-    driverXbox.y().whileTrue(climbOpenCommand);
-    driverXbox.a().whileTrue(climbCommand);
+    driverXbox.button(9).onTrue(clibModeCommand);
+    driverXbox.button(4).whileTrue(climbOpenCommand).onFalse(new InstantCommand(() -> climbOpenCommand.cancel()));
+    driverXbox.button(2).whileTrue(climbCommand).onFalse(new InstantCommand(() -> climbCommand.cancel()));
+    driverXbox.button(6).onTrue(shootLevel2Command);
+    driverXbox.button(5).onTrue(IntakeCmd);
     driverXbox.pov(0).whileTrue(drivebase.centerModulesCommand());
 
   }

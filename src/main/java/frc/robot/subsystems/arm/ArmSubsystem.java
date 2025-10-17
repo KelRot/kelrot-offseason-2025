@@ -7,6 +7,7 @@ import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
+import com.revrobotics.spark.config.ClosedLoopConfig;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
 import edu.wpi.first.math.controller.PIDController;
@@ -22,14 +23,15 @@ public class ArmSubsystem extends SubsystemBase {
   public TunableNumber kP = new TunableNumber("Arm/kP", 0.034);
   public TunableNumber kI = new TunableNumber("Arm/kI", 0.0);
   public TunableNumber kD = new TunableNumber("Arm/kD", 0.00000098);
-  public TunableNumber debugSetpoint = new TunableNumber("Arm/debugSetpoint", ArmConstants.defaultAngle);
+  public TunableNumber debugSetpoint = new TunableNumber("Arm/debugSetpoint", -ArmConstants.defaultAngle);
   public SparkMax masterMotor, slaveMotor;
-  public double setPoint = ArmConstants.defaultAngle;
+  public double setPointt = -ArmConstants.defaultAngle;
   public SparkMaxConfig masterConfig, slaveConfig;
   private final SparkClosedLoopController closedLoopController;
+  private final ClosedLoopConfig closedLoopConfig;
   private final Encoder quadEncoder;
   private boolean isStopped = false;
-  private PIDController pidController = new PIDController(kP.lastValue, kI.lastValue, kD.lastValue);
+  public PIDController pidController;
 
   /** Creates a new ExampleSubsystem. */
   public ArmSubsystem() {
@@ -39,6 +41,7 @@ public class ArmSubsystem extends SubsystemBase {
     this.masterConfig = new SparkMaxConfig();
     this.slaveConfig = new SparkMaxConfig();
     this.closedLoopController = masterMotor.getClosedLoopController();
+    this.closedLoopConfig = new ClosedLoopConfig();
     configureMotors();
     configureEncoder();
   }
@@ -48,18 +51,38 @@ public class ArmSubsystem extends SubsystemBase {
     return direction * (0.96 * Math.abs(Math.sin(Math.toRadians(Math.abs(angleInDegrees)))));
   }
 
-  public void reachSetPoint(double setPoint) {
-    if(!SmartDashboard.getBoolean("dev/debugMode", false) && !isStopped) {
-    // Implement PID control logic here to reach the desired setPoint
-    if (SmartDashboard.getBoolean("dev/isRioPIDController", true)) {
-      double pidOutput = pidController.calculate(getCurrentAngle(), setPoint);
-      double ffOutput = calculateFF(getCurrentAngle());
-      masterMotor.setVoltage(pidOutput + ffOutput);
-    } else {
-      this.closedLoopController.setReference(setPoint, ControlType.kPosition, ClosedLoopSlot.kSlot0,
-          calculateFF(getCurrentAngle()));
+  public void reachSetPoint() {
+    if (!SmartDashboard.getBoolean("dev/debugMode", false) && !isStopped) {
+      // Implement PID control logic here to reach the desired setPoint
+      if (SmartDashboard.getBoolean("dev/isRioPIDController", true)) {
+        double pidOutput = getPIDController().calculate(getCurrentAngle(), getSetpoint());
+        double direction = pidOutput > 0 ? 1 : -1;
+        pidOutput = direction * Math.min(1.37, Math.abs(pidOutput));
+        SmartDashboard.putNumber("Arm/PIDOutput", pidOutput);
+        double ffOutput = calculateFF(getCurrentAngle());
+        masterMotor.setVoltage(pidOutput + ffOutput);
+      } else {
+        this.closedLoopController.setReference(getSetpoint(), ControlType.kPosition, ClosedLoopSlot.kSlot0,
+            calculateFF(getCurrentAngle()));
+      }
     }
   }
+
+  public void reachSetPoint(double setPoint) {
+    if (!SmartDashboard.getBoolean("dev/debugMode", false) && !isStopped) {
+      // Implement PID control logic here to reach the desired setPoint
+      if (SmartDashboard.getBoolean("dev/isRioPIDController", true)) {
+        double pidOutput = getPIDController().calculate(getCurrentAngle(), setPoint);
+        double direction = pidOutput > 0 ? 1 : -1;
+        pidOutput = direction * Math.min(1.37, Math.abs(pidOutput));
+        SmartDashboard.putNumber("Arm/PIDOutput", pidOutput);
+        double ffOutput = calculateFF(getCurrentAngle());
+        masterMotor.setVoltage(pidOutput + ffOutput);
+      } else {
+        this.closedLoopController.setReference(setPoint, ControlType.kPosition, ClosedLoopSlot.kSlot0,
+            calculateFF(getCurrentAngle()));
+      }
+    }
   }
 
   public double getCurrentAngle() {
@@ -68,11 +91,11 @@ public class ArmSubsystem extends SubsystemBase {
   }
 
   public void setSetpoint(double setPoint) {
-    this.setPoint = setPoint;
+    setPointt = setPoint;
   }
 
   public double getSetpoint() {
-    return this.setPoint;
+    return setPointt;
   }
 
   public void setVoltage() {
@@ -84,6 +107,10 @@ public class ArmSubsystem extends SubsystemBase {
     this.isStopped = isStopped;
   }
 
+  private PIDController getPIDController() {
+    return pidController = new PIDController(kP.lastValue, kI.lastValue, kD.lastValue);
+  }
+
   @Override
   public void periodic() {
     if (this.isStopped) {
@@ -93,20 +120,18 @@ public class ArmSubsystem extends SubsystemBase {
         setVoltage();
       }
     }
-      if (masterMotor.getEncoder().getVelocity() < 0.5 && masterMotor.getEncoder().getVelocity() > -0.5) {
-        masterMotor.getEncoder().setPosition(getCurrentAngle() * (Constants.ArmConstants.GEARING / 360.0));
-      }
-      pidController.setP(kP.lastValue);
-      pidController.setI(kI.lastValue);
-      pidController.setD(kD.lastValue);
-      SmartDashboard.putNumber("Arm/CurrentAngle", getCurrentAngle());
-      SmartDashboard.putNumber("Arm/SetPoint", getSetpoint());
-      SmartDashboard.putNumber("Arm/MotorVelocity", masterMotor.getEncoder().getVelocity());
-      SmartDashboard.putNumber("Arm/MotorPosition", masterMotor.getEncoder().getPosition());
-      SmartDashboard.putNumber("Arm/MotorOutput", masterMotor.getAppliedOutput());
-      SmartDashboard.putNumber("Arm/MotorCurrent", masterMotor.getOutputCurrent());
-      // This method will be called once per scheduler run
+    if (masterMotor.getEncoder().getVelocity() < 0.5 && masterMotor.getEncoder().getVelocity() > -0.5) {
+      masterMotor.getEncoder().setPosition(getCurrentAngle() * (Constants.ArmConstants.GEARING / 360.0));
     }
+    SmartDashboard.putNumber("Arm/CurrentAngle", getCurrentAngle());
+    SmartDashboard.putNumber("Arm/SetPoint", getSetpoint());
+    SmartDashboard.putBoolean("Arm/isStopped", isStopped);
+    SmartDashboard.putNumber("Arm/MotorVelocity", masterMotor.getEncoder().getVelocity());
+    SmartDashboard.putNumber("Arm/MotorPosition", masterMotor.getEncoder().getPosition());
+    SmartDashboard.putNumber("Arm/MotorOutput", masterMotor.getAppliedOutput());
+    SmartDashboard.putNumber("Arm/MotorCurrent", masterMotor.getOutputCurrent());
+    // This method will be called once per scheduler run
+  }
 
   @Override
   public void simulationPeriodic() {
@@ -114,13 +139,18 @@ public class ArmSubsystem extends SubsystemBase {
   }
 
   public Command reachSetPointCommand() {
-    return run(() -> reachSetPoint(getSetpoint()));
+    return run(() -> reachSetPoint());
   }
+
   public Command TreachSetPointCommand() {
     return run(() -> reachSetPoint(debugSetpoint.lastValue));
   }
+
   public void configureMotors() {
-    masterConfig.idleMode(IdleMode.kBrake).voltageCompensation(12.0).smartCurrentLimit(45).encoder
+    closedLoopConfig.pid(kP.lastValue, kI.lastValue, kD.lastValue);
+    masterConfig.idleMode(IdleMode.kBrake).voltageCompensation(12.0).smartCurrentLimit(45).closedLoop
+        .apply(closedLoopConfig);
+    masterConfig.encoder
         .positionConversionFactor(Constants.ArmConstants.ENCODER_DISTANCE_PER_PULSE * Constants.ArmConstants.GEARING);
     slaveConfig.idleMode(IdleMode.kBrake).follow(masterMotor).voltageCompensation(12.0).smartCurrentLimit(45);
 
